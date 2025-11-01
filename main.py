@@ -88,3 +88,7 @@ def delete_product(product_id: int):
         raise HTTPException(status_code=404, detail="Product not found")
     conn.close()
     return
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
