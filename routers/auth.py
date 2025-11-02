@@ -1,4 +1,3 @@
-# routers/auth.py
 from fastapi import APIRouter, HTTPException
 from database import get_db
 import schemas
@@ -13,7 +12,7 @@ SECRET_KEY = os.getenv("JWT_SECRET", "secret123")
 ALGORITHM = "HS256"
 
 def hash_password(password: str):
-    # bcrypt supports only 72 bytes, truncate longer passwords safely
+    
     return pwd_context.hash(password[:72])
 
 def verify_password(password: str, hashed: str):

@@ -1,4 +1,3 @@
-# routers/products.py
 from fastapi import APIRouter, HTTPException
 from database import get_db
 import schemas
