@@ -1,26 +1,59 @@
+
 import sqlite3
+from contextlib import contextmanager
+import os
 
-DB_NAME = "products.db"
+DB_PATH = os.environ.get("DB_PATH", "app.db")
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row  
-    return conn
-
+def sqlite_row_dict(cursor, row):
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 def init_db():
-    conn = get_db_connection()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            price REAL NOT NULL,
-            quantity INTEGER DEFAULT 0
-        )
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite_row_dict
+    cur = conn.cursor()
+    cur.execute("PRAGMA foreign_keys = ON;")
+
+    # Create users table (auth)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT DEFAULT 'user'
+    );
+    """)
+
+    # Categories table
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        description TEXT
+    );
+    """)
+
+    # Products table (linked to categories)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        price REAL DEFAULT 0,
+        category_id INTEGER NOT NULL,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    );
     """)
     conn.commit()
     conn.close()
 
-
-init_db()
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite_row_dict
+    try:
+        conn.execute("PRAGMA foreign_keys = ON;")
+        yield conn
+    finally:
+        conn.commit()
+        conn.close()
