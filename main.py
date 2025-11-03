@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import init_db
-from routers import products, category, auth
+from routers import products, category, auth , orders
 
 app = FastAPI(title="Products & Categories ")
 
@@ -12,3 +12,5 @@ def startup_event():
 app.include_router(auth.router)
 app.include_router(category.router)
 app.include_router(products.router)
+app.include_router(orders.router)
+

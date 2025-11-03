@@ -48,3 +48,17 @@ class ProductOut(BaseModel):
     description: Optional[str]
     price: float
     category: CategoryOut
+
+
+class OrderCreate(BaseModel):
+    user_id: int
+    product_id: int
+
+class OrderOut(BaseModel):
+    id: int
+    user_id: int
+    product_id: int
+    timestamp: str
+    user_email: str
+    product_name: str
+    product_price: float
