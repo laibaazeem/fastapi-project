@@ -14,7 +14,7 @@ def init_db():
     cur = conn.cursor()
     cur.execute("PRAGMA foreign_keys = ON;")
 
-    # Create users table (auth)
+    
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +24,7 @@ def init_db():
     );
     """)
 
-    # Categories table
+    
     cur.execute("""
     CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +33,7 @@ def init_db():
     );
     """)
 
-    # Products table (linked to categories)
+    
     cur.execute("""
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
