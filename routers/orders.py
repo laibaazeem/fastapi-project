@@ -64,28 +64,57 @@ def list_orders():
                    u.email AS user_email
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            GROUP BY o.cart_id        
             ORDER BY o.order_time DESC
         """)
         return cur.fetchall()
 
-@router.get("/user/{user_id}", response_model=list[schemas.OrderOut])
-def get_user_orders(user_id: int):
+# @router.get("/user/{user_id}", response_model=list[schemas.OrderOut])
+# def get_user_orders(user_id: int):
+#     with get_db() as conn:
+#         cur = conn.cursor()
+
+        
+#         cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+#         user = cur.fetchone()
+#         if not user:
+#             raise HTTPException(status_code=404, detail="User not found")
+
+        
+#         cur.execute("""
+#             SELECT o.id, o.user_id, o.cart_id, o.total_amount, o.order_status, o.order_time,
+#                    u.email AS user_email
+#             FROM orders o
+#             JOIN users u ON o.user_id = u.id
+#             WHERE o.user_id = ?
+#             ORDER BY o.order_time DESC
+#         """, (user_id,))
+#         orders = cur.fetchall()
+
+#         if not orders:
+#             raise HTTPException(status_code=404, detail="No orders found for this user")
+
+#         return orders
+
+
+@router.get("/details/{user_id}")
+def get_order_details(user_id: int):
     with get_db() as conn:
         cur = conn.cursor()
 
-        
+        # ✅ Check if user exists
         cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user = cur.fetchone()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        
+        # ✅ Get all orders for that user
         cur.execute("""
-            SELECT o.id, o.user_id, o.cart_id, o.total_amount, o.order_status, o.order_time,
-                   u.email AS user_email
+            SELECT o.id AS order_id, o.total_amount, o.order_status, o.order_time,
+                   o.cart_id
             FROM orders o
-            JOIN users u ON o.user_id = u.id
             WHERE o.user_id = ?
+            GROUP BY o.cart_id        
             ORDER BY o.order_time DESC
         """, (user_id,))
         orders = cur.fetchall()
@@ -93,4 +122,25 @@ def get_user_orders(user_id: int):
         if not orders:
             raise HTTPException(status_code=404, detail="No orders found for this user")
 
-        return orders
+        # ✅ For each order, fetch related products
+        detailed_orders = []
+        for order in orders:
+            cur.execute("""
+                SELECT p.id, p.name, p.price, ci.quantity
+                FROM cart_items ci
+                JOIN products p ON ci.product_id = p.id
+                WHERE ci.cart_id = ?
+            """, (order["cart_id"],))
+            products = cur.fetchall()
+
+            detailed_orders.append({
+                "order_id": order["order_id"],
+                "cart_id": order["cart_id"],
+                "total_amount": order["total_amount"],
+                "order_status": order["order_status"],
+                "order_time": order["order_time"],
+                "products": products
+            })
+
+        return detailed_orders
+

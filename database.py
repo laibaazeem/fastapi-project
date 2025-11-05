@@ -81,7 +81,7 @@ def init_db():
         user_id INTEGER NOT NULL,
         cart_id INTEGER NOT NULL,
         total_amount REAL DEFAULT 0,
-        order_status TEXT DEFAULT 'pending',
+        order_status TEXT DEFAULT 'confirmed',
         order_time DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE
@@ -94,7 +94,7 @@ def init_db():
     conn.close()
 
 
-#
+
 @contextmanager
 def get_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)

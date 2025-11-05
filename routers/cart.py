@@ -1,4 +1,3 @@
-# routers/cart.py
 from fastapi import APIRouter, HTTPException
 from database import get_db
 import schemas
@@ -76,7 +75,7 @@ def checkout_cart(cart_id: int):
         cur.execute("""
             INSERT INTO orders (user_id, cart_id, total_amount, order_status)
             VALUES (?, ?, ?,?)
-        """, (cart["user_id"], cart_id, total, 'pending'))
+        """, (cart["user_id"], cart_id, total, 'confirmed'))
         order_id = cur.lastrowid
 
         
@@ -96,26 +95,26 @@ def checkout_cart(cart_id: int):
         }
 
 
+#✅ NEW ENDPOINT: Get all cart details by user_id
 @router.get("/user/{user_id}", response_model=list[schemas.CartOut])
-def get_user_carts(user_id: int):
+def get_cart_details(user_id: int):
     with get_db() as conn:
         cur = conn.cursor()
 
-        
+        # Check if user exists
         cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        user = cur.fetchone()
-        if not user:
+        if not cur.fetchone():
             raise HTTPException(status_code=404, detail="User not found")
 
-        
+        # Get all carts of user
         cur.execute("SELECT * FROM carts WHERE user_id = ?", (user_id,))
         carts = cur.fetchall()
         if not carts:
             raise HTTPException(status_code=404, detail="No carts found for this user")
 
-        results = []
+        user_carts = []
         for cart in carts:
-            
+            # Get products in each cart
             cur.execute("""
                 SELECT p.id, p.name, p.price
                 FROM cart_items ci
@@ -124,11 +123,51 @@ def get_user_carts(user_id: int):
             """, (cart["id"],))
             products = cur.fetchall()
 
-            results.append({
+            user_carts.append({
                 "id": cart["id"],
                 "user_id": cart["user_id"],
                 "created_at": cart["created_at"],
                 "products": products
             })
 
-        return results
+        return user_carts
+    
+
+# @router.get("/user/{user_id}", response_model=list[schemas.CartOut])
+# def get_user_carts(user_id: int):
+#     with get_db() as conn:
+#         cur = conn.cursor()
+
+        
+#         cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+#         user = cur.fetchone()
+#         if not user:
+#             raise HTTPException(status_code=404, detail="User not found")
+
+        
+#         cur.execute("SELECT * FROM carts WHERE user_id = ?", (user_id,))
+#         carts = cur.fetchall()
+#         if not carts:
+#             raise HTTPException(status_code=404, detail="No carts found for this user")
+
+#         results = []
+#         for cart in carts:
+            
+#             cur.execute("""
+#                 SELECT p.id, p.name, p.price
+#                 FROM cart_items ci
+#                 JOIN products p ON ci.product_id = p.id
+#                 WHERE ci.cart_id = ?
+#             """, (cart["id"],))
+#             products = cur.fetchall()
+
+#             results.append({
+#                 "id": cart["id"],
+#                 "user_id": cart["user_id"],
+#                 "created_at": cart["created_at"],
+#                 "products": products
+#             })
+
+#         return results
+
+    

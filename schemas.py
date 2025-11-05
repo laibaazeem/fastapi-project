@@ -73,6 +73,13 @@ class OrderOut(BaseModel):
     total_amount: float
     user_email: Optional[str] = None
 
+class OrderDetailsOut(BaseModel):
+    order_id: int
+    cart_id: int
+    total_amount: float
+    order_status: str
+    order_time: str
+    products: list[dict]
 
 
 class CartCreate(BaseModel):
