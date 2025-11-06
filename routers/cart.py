@@ -22,10 +22,22 @@ def add_to_cart(payload: schemas.CartCreate):
 
         
         for pid in payload.product_ids:
-            cur.execute("SELECT id FROM products WHERE id = ?", (pid,))
-            if not cur.fetchone():
+            cur.execute("SELECT id, remaining_units FROM products WHERE id = ?", (pid,))
+            product = cur.fetchone()
+            if not product:
                 raise HTTPException(status_code=400, detail=f"Product {pid} not found")
-            cur.execute("INSERT INTO cart_items (cart_id, product_id) VALUES (?, ?)", (cart_id, pid))
+            if product["remaining_units"] == 0:
+                raise HTTPException(status_code=400, detail=f"Product {pid} is out of stock")
+            cur.execute(
+                "INSERT INTO cart_items (cart_id, product_id) VALUES (?, ?)", 
+                (cart_id, pid)
+            )
+
+        
+        cur.execute("SELECT * FROM carts WHERE id = ?", (cart_id,))
+        cart = cur.fetchone()
+        if not cart:
+            raise HTTPException(status_code=500, detail="Cart not found after creation")
 
         
         cur.execute("""
@@ -34,17 +46,14 @@ def add_to_cart(payload: schemas.CartCreate):
             JOIN products p ON ci.product_id = p.id
             WHERE ci.cart_id = ?
         """, (cart_id,))
-        products = cur.fetchall()
+        products = cur.fetchall() or []
 
-        cur.execute("SELECT * FROM carts WHERE id = ?", (cart_id,))
-        cart = cur.fetchone()
         return {
             "id": cart["id"],
             "user_id": cart["user_id"],
             "created_at": cart["created_at"],
             "products": products
         }
-
 
 
 @router.post("/checkout/{cart_id}", response_model=schemas.CheckoutOut)
@@ -74,7 +83,7 @@ def checkout_cart(cart_id: int):
         
         cur.execute("""
             INSERT INTO orders (user_id, cart_id, total_amount, order_status)
-            VALUES (?, ?, ?,?)
+            VALUES (?, ?, ?, ?)
         """, (cart["user_id"], cart_id, total, 'confirmed'))
         order_id = cur.lastrowid
 
@@ -84,6 +93,8 @@ def checkout_cart(cart_id: int):
         
         cur.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
         order = cur.fetchone()
+        if not order:
+          raise HTTPException(status_code=500, detail="Order not found after creation")
 
         return {
             "order_id": order["id"],
@@ -95,7 +106,7 @@ def checkout_cart(cart_id: int):
         }
 
 
-#✅ NEW ENDPOINT: Get all cart details by user_id
+
 @router.get("/user/{user_id}", response_model=list[schemas.CartOut])
 def get_cart_details(user_id: int):
     with get_db() as conn:
@@ -106,7 +117,7 @@ def get_cart_details(user_id: int):
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Get all carts of user
+        
         cur.execute("SELECT * FROM carts WHERE user_id = ?", (user_id,))
         carts = cur.fetchall()
         if not carts:
@@ -114,14 +125,13 @@ def get_cart_details(user_id: int):
 
         user_carts = []
         for cart in carts:
-            # Get products in each cart
             cur.execute("""
                 SELECT p.id, p.name, p.price
                 FROM cart_items ci
                 JOIN products p ON ci.product_id = p.id
                 WHERE ci.cart_id = ?
             """, (cart["id"],))
-            products = cur.fetchall()
+            products = cur.fetchall() or []
 
             user_carts.append({
                 "id": cart["id"],
@@ -131,28 +141,25 @@ def get_cart_details(user_id: int):
             })
 
         return user_carts
-    
+
 
 # @router.get("/user/{user_id}", response_model=list[schemas.CartOut])
 # def get_user_carts(user_id: int):
 #     with get_db() as conn:
 #         cur = conn.cursor()
-
-        
+#
 #         cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
 #         user = cur.fetchone()
 #         if not user:
 #             raise HTTPException(status_code=404, detail="User not found")
-
-        
+#
 #         cur.execute("SELECT * FROM carts WHERE user_id = ?", (user_id,))
 #         carts = cur.fetchall()
 #         if not carts:
 #             raise HTTPException(status_code=404, detail="No carts found for this user")
-
+#
 #         results = []
 #         for cart in carts:
-            
 #             cur.execute("""
 #                 SELECT p.id, p.name, p.price
 #                 FROM cart_items ci
@@ -160,14 +167,12 @@ def get_cart_details(user_id: int):
 #                 WHERE ci.cart_id = ?
 #             """, (cart["id"],))
 #             products = cur.fetchall()
-
+#
 #             results.append({
 #                 "id": cart["id"],
 #                 "user_id": cart["user_id"],
 #                 "created_at": cart["created_at"],
 #                 "products": products
 #             })
-
+#
 #         return results
-
-    

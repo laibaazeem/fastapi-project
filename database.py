@@ -47,6 +47,8 @@ def init_db():
         description TEXT,
         price REAL DEFAULT 0,
         category_id INTEGER NOT NULL,
+        total_units INTEGER DEFAULT 0,
+        remaining_units INTEGER DEFAULT 0,        
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
     );
     """)
