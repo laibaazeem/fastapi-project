@@ -70,4 +70,30 @@ def forget_password(payload: schemas.ForgetPassword):
         send_email(payload.email, otp_code)
         
 
-    return {"message": "email has been sent with otp."}        
+    return {"message": "email has been sent with otp."}   
+
+@router.post("/reset password")
+def reset_password(payload: schemas.ResetPassword):
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        cur.execute("SELECT * FROM users WHERE email = ?", (payload.email,))
+        user = cur.fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="Email not found")
+
+        
+        if user["otp_code"] != payload.otp_code:
+            raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    
+        hashed_pw = hash_password(payload.new_password)
+
+        cur.execute(
+            "UPDATE users SET password_hash = ?, otp_code = NULL WHERE email = ?",
+            (hashed_pw, payload.email)
+        )
+
+    return {"message": "Password has been reset successfully"}
+     

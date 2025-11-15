@@ -15,7 +15,10 @@ class LoginIn(BaseModel):
 class ForgetPassword(BaseModel):
     email: EmailStr
        
-
+class ResetPassword(BaseModel):
+    email: EmailStr
+    otp_code: int
+    new_password: str
 
 class TokenOut(BaseModel):
     access_token: str
