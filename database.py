@@ -25,10 +25,12 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT DEFAULT 'user'
+        password_hash TEXT NOT NULL,    
+        role TEXT DEFAULT 'user',
+        otp_code INTEGER
     );
     """)
+
 
     
     cur.execute("""

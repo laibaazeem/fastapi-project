@@ -12,6 +12,10 @@ class LoginIn(BaseModel):
     email: EmailStr
     password: str
 
+class ForgetPassword(BaseModel):
+    email: EmailStr
+       
+
 
 class TokenOut(BaseModel):
     access_token: str
@@ -63,7 +67,6 @@ class ProductOut(BaseModel):
 
 
 
-
 class OrderCreate(BaseModel):
     user_id: int
     cart_id: int
@@ -78,6 +81,7 @@ class OrderOut(BaseModel):
     total_amount: float
     user_email: Optional[str] = None
 
+
 class OrderDetailsOut(BaseModel):
     order_id: int
     cart_id: int
@@ -87,9 +91,15 @@ class OrderDetailsOut(BaseModel):
     products: list[dict]
 
 
+
+class CartItemIn(BaseModel):
+    product_id: int
+    quantity: int = 1
+
+
 class CartCreate(BaseModel):
     user_id: int
-    product_ids: list[int]
+    products: List[CartItemIn]  
 
 
 class CartOut(BaseModel):

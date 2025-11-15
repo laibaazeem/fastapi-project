@@ -60,7 +60,7 @@ def make_order(payload: schemas.OrderCreate):
             VALUES (?, ?, ?, ?)
         """, (payload.user_id, payload.cart_id, total_amount, "pending"))
 
-        conn.commit()
+        
 
         
         cur.execute("""

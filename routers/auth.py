@@ -4,6 +4,7 @@ import schemas
 from passlib.context import CryptContext
 import jwt, os
 from datetime import datetime, timedelta
+from routers.utils import send_email, random_integer
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -49,3 +50,24 @@ def login_user(payload: schemas.LoginIn):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         token = create_token({"sub": user["email"], "role": user["role"]})
         return {"access_token": token, "token_type": "bearer"}
+    
+
+
+
+
+
+
+@router.post("forget password")
+def forget_password(payload: schemas.ForgetPassword):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE email = ?", (payload.email,))
+        user = cur.fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Email not found")    
+        otp_code = random_integer()
+        cur.execute("UPDATE users SET otp_code = ? WHERE email = ?", (otp_code, payload.email))
+        send_email(payload.email, otp_code)
+        
+
+    return {"message": "email has been sent with otp."}        
